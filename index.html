@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Service Desk Copilot — Vishnu Vardhan</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #050810;
+    --surface: #0d1117;
+    --card: #111827;
+    --border: #1f2937;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --accent3: #10b981;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --glow: rgba(0, 212, 255, 0.15);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Orb effects */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+  .orb-1 { width: 500px; height: 500px; background: var(--accent2); top: -200px; right: -100px; animation: drift1 12s ease-in-out infinite; }
+  .orb-2 { width: 400px; height: 400px; background: var(--accent); bottom: -150px; left: -100px; animation: drift2 15s ease-in-out infinite; }
+
+  @keyframes drift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-60px,80px)} }
+  @keyframes drift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(80px,-60px)} }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 80px 0 60px;
+    text-align: center;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.25);
+    color: var(--accent);
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+    animation: fadeUp 0.6s ease both;
+  }
+  .badge::before { content: '◉'; font-size: 8px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 6vw, 68px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    margin-bottom: 20px;
+    animation: fadeUp 0.7s ease 0.1s both;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 60%, #f472b6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.8;
+    max-width: 560px;
+    margin: 0 auto 40px;
+    animation: fadeUp 0.7s ease 0.2s both;
+  }
+
+  .tech-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 48px;
+    animation: fadeUp 0.7s ease 0.3s both;
+  }
+
+  .tech-tag {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .tech-tag:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,212,255,0.05);
+  }
+
+  /* Metrics */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 64px;
+    animation: fadeUp 0.7s ease 0.4s both;
+  }
+
+  @media (max-width: 640px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+
+  .metric-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 16px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transform: scaleX(0);
+    transition: transform 0.3s;
+  }
+  .metric-card:hover { transform: translateY(-4px); border-color: rgba(0,212,255,0.3); }
+  .metric-card:hover::before { transform: scaleX(1); }
+
+  .metric-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -1px;
+    display: block;
+  }
+
+  .metric-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* Architecture */
+  .section { margin-bottom: 64px; }
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    letter-spacing: -0.5px;
+  }
+
+  .arch-flow {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .arch-node {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 12px;
+    transition: background 0.2s;
+  }
+  .arch-node:hover { background: rgba(255,255,255,0.03); }
+
+  .node-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .node-blue { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2); }
+  .node-purple { background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.2); }
+  .node-green { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); }
+  .node-orange { background: rgba(251,146,60,0.1); border: 1px solid rgba(251,146,60,0.2); }
+
+  .node-content { flex: 1; }
+  .node-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .node-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  .arch-arrow {
+    text-align: center;
+    color: var(--border);
+    font-size: 18px;
+    padding: 2px 0;
+  }
+
+  /* Features grid */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 600px) { .features-grid { grid-template-columns: 1fr; } }
+
+  .feature-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(0,212,255,0.05), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .feature-card:hover { border-color: rgba(0,212,255,0.25); transform: translateY(-2px); }
+  .feature-card:hover::after { opacity: 1; }
+
+  .feature-num {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  .feature-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .feature-desc { font-size: 12px; color: var(--muted); line-height: 1.7; }
+
+  /* Stack table */
+  .stack-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+  }
+  .stack-table tr td {
+    background: var(--card);
+    padding: 14px 20px;
+    font-size: 13px;
+    border: 1px solid var(--border);
+  }
+  .stack-table tr td:first-child {
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-radius: 10px 0 0 10px;
+    border-right: none;
+    width: 160px;
+  }
+  .stack-table tr td:last-child {
+    border-radius: 0 10px 10px 0;
+    border-left: none;
+    color: var(--accent);
+  }
+
+  /* Author */
+  .author-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 48px;
+  }
+  @media (max-width: 500px) { .author-card { flex-direction: column; text-align: center; } }
+
+  .author-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .author-name { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .author-title { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+
+  .author-links { display: flex; gap: 10px; flex-wrap: wrap; }
+  .author-link {
+    font-size: 11px;
+    color: var(--accent);
+    text-decoration: none;
+    border: 1px solid rgba(0,212,255,0.25);
+    padding: 4px 12px;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .author-link:hover { background: rgba(0,212,255,0.1); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Scroll animations */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    position: relative;
+    z-index: 1;
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="badge">Open Source Project</div>
+    <h1><span class="gradient-text">AI Service Desk<br>Copilot</span></h1>
+    <p class="hero-sub">Enterprise-grade conversational AI that automates Tier-1 support intake using Microsoft Copilot Studio, Azure OpenAI GPT-4, and Dynamics 365 Customer Service.</p>
+    <div class="tech-row">
+      <span class="tech-tag">Copilot Studio</span>
+      <span class="tech-tag">Azure OpenAI GPT-4</span>
+      <span class="tech-tag">Power Automate</span>
+      <span class="tech-tag">Dynamics 365</span>
+      <span class="tech-tag">Dataverse</span>
+      <span class="tech-tag">Microsoft Entra ID</span>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics reveal">
+    <div class="metric-card">
+      <span class="metric-value">40%</span>
+      <span class="metric-label">Ticket Deflection</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-value">+18%</span>
+      <span class="metric-label">First Contact Resolution</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-value">−12m</span>
+      <span class="metric-label">Handle Time / Ticket</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-value">200+</span>
+      <span class="metric-label">Enterprise Users</span>
+    </div>
+  </div>
+
+  <!-- Architecture -->
+  <div class="section reveal">
+    <div class="section-label">// System Design</div>
+    <div class="section-title">Architecture Flow</div>
+    <div class="arch-flow">
+      <div class="arch-node">
+        <div class="node-icon node-blue">💬</div>
+        <div class="node-content">
+          <div class="node-title">User Interface (Teams / Web Chat)</div>
+          <div class="node-desc">End users interact via Microsoft Teams or embedded web chat widget. Authenticated via Entra ID SSO.</div>
+        </div>
+      </div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-node">
+        <div class="node-icon node-purple">🤖</div>
+        <div class="node-content">
+          <div class="node-title">Copilot Studio Agent</div>
+          <div class="node-desc">Topics, triggers, NLP intent recognition, conversation flows, fallback handling, and escalation path management.</div>
+        </div>
+      </div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-node">
+        <div class="node-icon node-blue">⚡</div>
+        <div class="node-content">
+          <div class="node-title">Power Automate Flows</div>
+          <div class="node-desc">Orchestrates ticket creation, Azure OpenAI knowledge search, SLA routing, and multi-channel notifications.</div>
+        </div>
+      </div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-node">
+        <div class="node-icon node-green">🗄️</div>
+        <div class="node-content">
+          <div class="node-title">Dataverse + Dynamics 365 Customer Service</div>
+          <div class="node-desc">Structured case records, SLA tracking, queue management, and full audit trail for compliance.</div>
+        </div>
+      </div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-node">
+        <div class="node-icon node-orange">🔐</div>
+        <div class="node-content">
+          <div class="node-title">Microsoft Entra ID (RBAC)</div>
+          <div class="node-desc">Least-privilege access enforced across 200+ enterprise users. Zero security remediation flags post-deployment.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="section reveal">
+    <div class="section-label">// Core Capabilities</div>
+    <div class="section-title">Key Features</div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-num">01 —</div>
+        <div class="feature-title">NLP Ticket Triage</div>
+        <div class="feature-desc">Intent recognition classifies incoming requests — password resets, access requests, hardware faults — and routes them automatically without human intervention.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">02 —</div>
+        <div class="feature-title">GPT-4 Knowledge Search</div>
+        <div class="feature-desc">Azure OpenAI GPT-4 searches internal knowledge bases and returns accurate, context-aware answers in natural language — eliminating agent involvement for common queries.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">03 —</div>
+        <div class="feature-title">Automated D365 Case Creation</div>
+        <div class="feature-desc">On escalation, the bot auto-creates a structured case in Dynamics 365 with pre-filled category, priority, affected user, and conversation summary.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">04 —</div>
+        <div class="feature-title">Graceful Escalation & Fallback</div>
+        <div class="feature-desc">Built-in fallback topics detect low-confidence responses and hand off to live agents with full conversation context preserved in the D365 case record.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stack -->
+  <div class="section reveal">
+    <div class="section-label">// Technology</div>
+    <div class="section-title">Tech Stack</div>
+    <table class="stack-table">
+      <tr><td>Conversational AI</td><td>Microsoft Copilot Studio (Power Virtual Agents)</td></tr>
+      <tr><td>Language Model</td><td>Azure OpenAI GPT-4</td></tr>
+      <tr><td>Automation</td><td>Power Automate</td></tr>
+      <tr><td>Data Layer</td><td>Microsoft Dataverse</td></tr>
+      <tr><td>CRM</td><td>Dynamics 365 Customer Service</td></tr>
+      <tr><td>Identity</td><td>Microsoft Entra ID (RBAC)</td></tr>
+      <tr><td>Monitoring</td><td>Azure Application Insights</td></tr>
+    </table>
+  </div>
+
+  <!-- Author -->
+  <div class="author-card reveal">
+    <div class="author-avatar">VV</div>
+    <div>
+      <div class="author-name">Vishnu Vardhan Reddy V</div>
+      <div class="author-title">Senior Dynamics 365 & Power Platform Developer · 5+ Years</div>
+      <div class="author-links">
+        <a href="https://linkedin.com/in/vishnu-reddy-v-403b2934b" class="author-link">LinkedIn →</a>
+        <a href="mailto:vishnuvreddy1@outlook.com" class="author-link">Email →</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="container">
+    AI Service Desk Copilot · Built with Copilot Studio + Azure OpenAI GPT-4 · MIT License
+  </div>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
